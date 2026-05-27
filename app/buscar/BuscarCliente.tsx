@@ -181,8 +181,8 @@ export default function BuscarCliente({
                         {SPEC_EMOJIS[prof.especialidad] || "👨‍⚕️"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`spec-pill spec-${specKey} mb-2`}>{prof.especialidad}</p>
-                        <h3 className="font-display text-base font-semibold text-[var(--navy)] leading-tight">{prof.nombre}</h3>
+                        <p className={`spec-pill spec-${specKey} mb-3 text-center`}>{prof.especialidad}</p>
+                        <h3 className="font-display text-base font-semibold text-center text-[var(--navy)] leading-tight">{prof.nombre}</h3>
                       </div>
                     </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Clock, MapPin, CheckCircle, Calendar } from "lucide-react";
@@ -32,6 +32,8 @@ export default function CalendarioReserva({ profesional }: { profesional: Profes
   const [paso, setPaso] = useState<"calendario" | "datos">("calendario");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const slotsRef = useRef<HTMLDivElement>(null);
+  const continueRef = useRef<HTMLDivElement>(null);
 
   // Build calendar cells
   const primerDia = new Date(anio, mes, 1).getDay();
@@ -63,6 +65,10 @@ export default function CalendarioReserva({ profesional }: { profesional: Profes
     startTransition(async () => {
       const ocu = await obtenerTurnosOcupados(profesional.id, fecha);
       setOcupados(ocu);
+      // Scroll a los horarios después de cargar
+      setTimeout(() => {
+        slotsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     });
   };
 
@@ -241,7 +247,7 @@ export default function CalendarioReserva({ profesional }: { profesional: Profes
 
             {/* Slots */}
             {diaSeleccionado && (
-              <div className="card-lg p-6">
+              <div className="card-lg p-6" ref={slotsRef}>
                 <div className="flex items-center gap-2 mb-4">
                   <Clock size={15} className="text-[var(--muted)]" />
                   <h3 className="font-semibold text-[var(--text)]">Horarios disponibles</h3>
@@ -256,7 +262,13 @@ export default function CalendarioReserva({ profesional }: { profesional: Profes
                       <button
                         key={slot}
                         disabled={ocu || pasado}
-                        onClick={() => setSlotSeleccionado(slot)}
+                        onClick={() => {
+                          setSlotSeleccionado(slot);
+                          // Scroll al botón de continuar después de seleccionar
+                          setTimeout(() => {
+                            continueRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+                          }, 50);
+                        }}
                         className={`slot-btn ${ocu || pasado ? "slot-taken" : ""} ${activo ? "slot-active" : ""}`}
                       >
                         {slot}
@@ -268,7 +280,7 @@ export default function CalendarioReserva({ profesional }: { profesional: Profes
             )}
 
             {diaSeleccionado && slotSeleccionado && (
-              <div className="flex justify-end">
+              <div className="flex justify-end" ref={continueRef}>
                 <button onClick={() => setPaso("datos")} className="btn btn-primary px-8">
                   Continuar →
                 </button>
@@ -285,10 +297,10 @@ export default function CalendarioReserva({ profesional }: { profesional: Profes
               <ChevronLeft size={14} /> Volver al calendario
             </button>
 
-            <h2 className="font-display text-2xl font-bold text-[var(--navy)] mb-1">Tus datos</h2>
-            <p className="text-sm text-[var(--muted)] mb-7">Completá tu información para confirmar el turno.</p>
+            <h2 className="font-display sm:text-center text-2xl font-bold text-[var(--navy)] mb-1">Tus datos</h2>
+            <p className="text-sm sm:text-center text-[var(--muted)] mb-7">Completá tu información para confirmar el turno.</p>
 
-            <div className="space-y-5 max-w-md">
+            <div className="space-y-5 max-w-md mx-auto">
               <div>
                 <label className="block text-sm font-semibold text-[var(--text-2)] mb-1.5">Nombre completo</label>
                 <input

@@ -88,13 +88,6 @@ export default async function ExitoPage({
             Inicio
           </Link>
         </div>
-
-        <p className="text-sm text-[var(--muted)]">
-          ¿Necesitás ayuda?{" "}
-          <Link href="#" className="text-[var(--blue)] hover:underline font-medium">
-            Contactá soporte
-          </Link>
-        </p>
       </div>
       <Footer />
     </div>
