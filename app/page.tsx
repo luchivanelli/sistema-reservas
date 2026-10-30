@@ -108,7 +108,7 @@ export default async function HomePage() {
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="eyebrow mb-2">Especialidades</p>
-            <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">¿Qué necesitás atender?</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">¿Qué necesitás?</h2>
           </div>
           <Link href="/buscar" className="btn btn-outline btn-sm w-fit">
             Ver todos los profesionales <ArrowRight size={13} />
