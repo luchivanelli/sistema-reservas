@@ -1,40 +1,31 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { obtenerProfesionales, obtenerEspecialidades } from "@/actions/profesionales";
+import { obtenerProfesionales } from "@/actions/profesionales";
 import BuscarCliente from "./BuscarCliente";
+import Loading from "./loading";
+
+export const metadata: Metadata = {
+  title: "Buscar médicos",
+  description: "Filtrá profesionales por especialidad, clínica o nombre y reservá tu turno.",
+};
 
 export default async function BuscarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ especialidad?: string; busqueda?: string }>;
+  searchParams: Promise<{ especialidad?: string; busqueda?: string; clinica?: string }>;
 }) {
-  const params = await searchParams;
-  const [profesionales, especialidades] = await Promise.all([
-    obtenerProfesionales({
-      especialidad: params.especialidad,
-      busqueda: params.busqueda,
-    }),
-    obtenerEspecialidades(),
-  ]);
+  const [params, profesionales] = await Promise.all([searchParams, obtenerProfesionales()]);
 
   return (
-    <div>
-      <Navbar />
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <Suspense>
-          <BuscarCliente
-            profesionales={profesionales}
-            especialidades={especialidades.map((e) => ({
-              especialidad: e.especialidad,
-              count: e._count.id,
-            }))}
-            filtroActual={params.especialidad || ""}
-            busquedaActual={params.busqueda || ""}
-          />
-        </Suspense>
-      </div>
-      <Footer />
-    </div>
+    <Suspense fallback={<Loading />}>
+      <BuscarCliente
+        profesionales={profesionales}
+        inicial={{
+          busqueda: params.busqueda ?? "",
+          especialidad: params.especialidad ?? "",
+          clinica: params.clinica ?? "",
+        }}
+      />
+    </Suspense>
   );
 }

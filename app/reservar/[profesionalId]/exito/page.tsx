@@ -1,95 +1,116 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle, Calendar, Clock, MapPin, Home } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { ArrowRight, Calendar, CalendarPlus, Check, CircleAlert, Clock, Mail, MapPin } from "lucide-react";
+import { obtenerTurnoPorId } from "@/actions/turnos";
+import { APP_TZ, fechaLarga, hora, urlGoogleCalendar } from "@/lib/fechas";
+import { claseTono } from "@/lib/especialidades";
+import Avatar from "@/components/Avatar";
+
+export const metadata: Metadata = { title: "Turno confirmado" };
 
 export default async function ExitoPage({
+  params,
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string>>;
+  params: Promise<{ profesionalId: string }>;
+  searchParams: Promise<{ turno?: string }>;
 }) {
-  const params = await searchParams;
-  const nombre = params.nombre || "Paciente";
-  const fecha = params.fecha || "";
-  const hora = params.hora || "";
-  const clinica = params.clinica || "";
-  const profesional = params.profesional || "";
-  const especialidad = params.especialidad || "";
+  const [{ profesionalId }, { turno: turnoId }] = await Promise.all([params, searchParams]);
+  const turno = turnoId ? await obtenerTurnoPorId(turnoId) : null;
 
-  return (
-    <div>
-      <Navbar />
-      <div className="max-w-lg mx-auto px-6 py-16 text-center">
-
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-          style={{ background: "var(--teal)", boxShadow: "0 12px 32px rgba(14,165,160,0.3)" }}
-        >
-          <CheckCircle size={36} className="text-white" strokeWidth={2.5} />
-        </div>
-
-        <h1 className="font-display text-3xl font-bold text-[var(--navy)] mb-3">¡Reserva exitosa!</h1>
-        <p className="text-[var(--muted)] mb-8">
-          Hola <span className="font-semibold text-[var(--text)]">{nombre}</span>, tu turno fue confirmado correctamente.
-        </p>
-
-        <div className="card-lg p-6 text-left mb-6">
-          <h2 className="font-display text-lg font-bold text-[var(--navy)] mb-4">Detalles de la cita</h2>
-
-          <div className="space-y-4">
-            {profesional && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[var(--blue-soft)] flex items-center justify-center shrink-0">
-                  <span className="text-sm">👨‍⚕️</span>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-0.5">MÉDICO</p>
-                  <p className="text-sm font-semibold text-[var(--navy)]">{profesional}</p>
-                  {especialidad && <p className="text-xs text-[var(--muted)]">{especialidad}</p>}
-                </div>
-              </div>
-            )}
-
-            {fecha && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[var(--blue-soft)] flex items-center justify-center shrink-0">
-                  <Calendar size={14} className="text-[var(--blue)]" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-0.5">FECHA Y HORA</p>
-                  <p className="text-sm font-semibold text-[var(--navy)] capitalize">{fecha}</p>
-                  {hora && <p className="text-xs text-[var(--muted)]">{hora} hs</p>}
-                </div>
-              </div>
-            )}
-
-            {clinica && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[var(--blue-soft)] flex items-center justify-center shrink-0">
-                  <MapPin size={14} className="text-[var(--blue)]" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-0.5">UBICACIÓN</p>
-                  <p className="text-sm font-semibold text-[var(--navy)]">{clinica}</p>
-                  <p className="text-xs text-[var(--muted)]">Arroyo Seco, Santa Fe</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <Link href="/mis-turnos" className="btn btn-primary py-3 gap-2">
-            <Calendar size={15} />
-            Mis turnos
-          </Link>
-          <Link href="/" className="btn btn-secondary py-3 gap-2">
-            <Home size={15} />
-            Inicio
-          </Link>
+  if (!turno) {
+    return (
+      <div className="container-x flex flex-col items-center py-24 text-center">
+        <span className="icon-tile tone-amber mb-5 h-14 w-14 rounded-2xl"><CircleAlert size={26} /></span>
+        <h1 className="text-2xl font-bold tracking-tight text-ink">No encontramos ese turno</h1>
+        <p className="mt-2 max-w-md text-sm text-ink-3">Si ya reservaste, podés verlo desde “Mis turnos” con tu email.</p>
+        <div className="mt-8 flex gap-3">
+          <Link href="/mis-turnos" className="btn btn-primary">Mis turnos</Link>
+          <Link href={`/reservar/${profesionalId}`} className="btn btn-outline">Reservar de nuevo</Link>
         </div>
       </div>
-      <Footer />
+    );
+  }
+
+  const { profesional } = turno;
+  const fechaTxt = fechaLarga(turno.fecha, APP_TZ);
+  const horaTxt = hora(turno.fecha, APP_TZ);
+  const gcal = urlGoogleCalendar({
+    titulo: `Turno con ${profesional.nombre}`,
+    inicio: turno.fecha,
+    detalles: `${profesional.especialidad} · Reservado en MedCare`,
+    ubicacion: profesional.clinica,
+  });
+
+  return (
+    <div className="container-x py-12 sm:py-16">
+      <div className="mx-auto max-w-lg">
+        <div className="text-center animate-fade-up">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_12px_32px_rgba(16,185,129,0.35)]">
+            <Check size={30} strokeWidth={3} />
+          </span>
+          <h1 className="mt-6 text-3xl font-bold tracking-tight text-ink">
+            {turno.cancelado ? "Este turno fue cancelado" : "¡Turno confirmado!"}
+          </h1>
+          <p className="mt-2 text-ink-3">
+            {turno.cancelado ? (
+              <>Podés reservar uno nuevo cuando quieras.</>
+            ) : (
+              <>Listo, <span className="font-semibold text-ink">{turno.clienteNombre}</span>. Te esperamos.</>
+            )}
+          </p>
+        </div>
+
+        <div className="panel mt-8 overflow-hidden animate-fade-up delay-1">
+          <div className="flex items-center gap-3 border-b border-line bg-canvas/60 p-5">
+            <Avatar nombre={profesional.nombre} especialidad={profesional.especialidad} size="lg" />
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-ink">{profesional.nombre}</p>
+              <span className={`pill mt-1 ${claseTono(profesional.especialidad)}`}>{profesional.especialidad}</span>
+            </div>
+          </div>
+
+          <dl className="grid gap-4 p-5 sm:grid-cols-2">
+            <Dato icon={Calendar} label="Fecha" valor={fechaTxt} />
+            <Dato icon={Clock} label="Hora" valor={`${horaTxt} hs · 30 min`} />
+            <Dato icon={MapPin} label="Clínica" valor={profesional.clinica} />
+            <Dato icon={Mail} label="Email" valor={turno.clienteEmail} />
+          </dl>
+
+          {!turno.cancelado && (
+            <div className="border-t border-line p-5">
+              <a href={gcal} target="_blank" rel="noopener noreferrer" className="btn btn-outline w-full">
+                <CalendarPlus size={16} /> Agregar a Google Calendar
+              </a>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 animate-fade-up delay-2">
+          <Link href={`/mis-turnos?email=${encodeURIComponent(turno.clienteEmail)}`} className="btn btn-primary btn-lg">
+            Ver mis turnos <ArrowRight size={16} />
+          </Link>
+          <Link href="/buscar" className="btn btn-secondary btn-lg">
+            Reservar otro turno
+          </Link>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-ink-3">
+          Guardá este email: lo vas a necesitar para consultar o cancelar el turno.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Dato({ icon: Icon, label, valor }: { icon: typeof Calendar; label: string; valor: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="icon-tile tone-brand h-9 w-9"><Icon size={15} /></span>
+      <div className="min-w-0">
+        <dt className="text-xs text-ink-3">{label}</dt>
+        <dd className="truncate text-sm font-semibold text-ink">{valor}</dd>
+      </div>
     </div>
   );
 }

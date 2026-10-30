@@ -1,68 +1,125 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { Activity, Menu, Search, X } from "lucide-react";
+import CommandPalette from "./CommandPalette";
+
+const LINKS = [
+  { href: "/", label: "Inicio", match: (p: string) => p === "/" },
+  { href: "/buscar", label: "Buscar médicos", match: (p: string) => p.startsWith("/buscar") || p.startsWith("/reservar") },
+  { href: "/mis-turnos", label: "Mis turnos", match: (p: string) => p.startsWith("/mis-turnos") },
+];
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [paletaAbierta, setPaletaAbierta] = useState(false);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+  const cerrarPaleta = useCallback(() => setPaletaAbierta(false), []);
 
-  const closeMenu = () => {
-    setIsOpen(false);
-  };
+  // Al navegar se cierran el menú mobile y la paleta (ajuste de estado derivado de una prop, sin efecto).
+  const [rutaPrevia, setRutaPrevia] = useState(pathname);
+  if (rutaPrevia !== pathname) {
+    setRutaPrevia(pathname);
+    setMenuAbierto(false);
+    setPaletaAbierta(false);
+  }
+
+  // Atajo global Ctrl/Cmd + K
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletaAbierta((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/95 backdrop-blur-sm shadow-sm">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3" onClick={closeMenu}>
-          <span className="font-display text-2xl font-semibold text-[var(--navy)]">Med<span className="text-[var(--blue)]">Care</span></span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1.5">
-          <Link href="/buscar" className="px-4 py-2 rounded-2xl text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
-            Buscar médicos
+    <>
+      <header className="sticky top-0 z-50 border-b border-line/80 bg-surface/85 backdrop-blur-md">
+        <div className="container-x flex h-16 items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="MedCare, ir al inicio">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white shadow-brand">
+              <Activity size={16} strokeWidth={2.5} />
+            </span>
+            <span className="text-[17px] font-bold tracking-tight text-ink">
+              Med<span className="text-brand-600">Care</span>
+            </span>
           </Link>
-          <Link href="/mis-turnos" className="px-4 py-2 rounded-2xl text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)] transition-colors">
-            Mis turnos
-          </Link>
-        </nav>
 
-        <button
-          onClick={toggleMenu}
-          className="md:hidden flex flex-col gap-1.5 p-2 hover:bg-[var(--bg)] rounded-lg transition-colors cursor-pointer"
-          aria-label="Abrir menú"
-          aria-expanded={isOpen}
-        >
-          <Menu />
-        </button>
-      </div>
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Principal">
+            {LINKS.map((l) => {
+              const activo = l.match(pathname);
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  aria-current={activo ? "page" : undefined}
+                  className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                    activo ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:bg-ink/5 hover:text-ink"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-      {/* Mobile Menu */}
-      {isOpen && (
-        <nav className="md:hidden border-t border-[var(--border)] bg-white/95 backdrop-blur-sm animate-in fade-in slide-in-from-top-1">
-          <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-2">
-            <Link
-              href="/buscar"
-              onClick={closeMenu}
-              className="text-sm px-1 py-2 rounded-2xl text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)] transition-colors block"
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPaletaAbierta(true)}
+              className="hidden h-9 items-center gap-2 rounded-xl border border-line-2 bg-canvas pl-3 pr-2 text-sm text-ink-3 transition-colors hover:border-brand-300 hover:text-ink md:flex"
+              aria-label="Búsqueda rápida"
             >
-              Buscar médicos
-            </Link>
-            <Link
-              href="/mis-turnos"
-              onClick={closeMenu}
-              className="text-sm px-1 py-2 rounded-2xl text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--bg)] transition-colors block"
+              <Search size={15} />
+              <span className="pr-4">Buscar…</span>
+              <span className="kbd">Ctrl K</span>
+            </button>
+            <button
+              onClick={() => setPaletaAbierta(true)}
+              className="btn btn-ghost btn-icon md:hidden"
+              aria-label="Búsqueda rápida"
             >
-              Mis turnos
-            </Link>
+              <Search size={20} />
+            </button>
+            <button
+              onClick={() => setMenuAbierto((v) => !v)}
+              className="btn btn-ghost btn-icon md:hidden"
+              aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={menuAbierto}
+            >
+              {menuAbierto ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
-        </nav>
-      )}
-    </header>
+        </div>
+
+        {menuAbierto && (
+          <nav className="border-t border-line bg-surface md:hidden animate-fade-in" aria-label="Principal móvil">
+            <div className="container-x flex flex-col gap-1 py-3">
+              {LINKS.map((l) => {
+                const activo = l.match(pathname);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    aria-current={activo ? "page" : undefined}
+                    className={`rounded-xl px-3 py-2.5 text-sm font-medium ${activo ? "bg-brand-50 text-brand-700" : "text-ink-2 hover:bg-canvas"}`}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
+      </header>
+
+      {paletaAbierta && <CommandPalette onClose={cerrarPaleta} />}
+    </>
   );
 }
